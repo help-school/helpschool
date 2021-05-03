@@ -1,4 +1,4 @@
-# helpschool containes the source code for helpschool.org
+# helpschool contains the source code for helpschool.org
 Backend is written go and database is postgres
 UI is written in React 
 
