@@ -1,6 +1,6 @@
 module github.com/venkata6/helpschool/api
 
-go 1.13
+go 1.16
 
 require (
 	github.com/go-chi/chi v4.0.3+incompatible
@@ -10,5 +10,4 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jackc/pgx/v4 v4.4.1
-
 )
