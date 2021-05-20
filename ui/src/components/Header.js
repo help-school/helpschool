@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Nav, Navbar, NavItem} from "react-bootstrap";
 import { Route,HashRouter } from "react-router-dom";
 import Teachers from './Teachers';
+import Login from './Login';
 import FAQs from './FAQs';
 import Home from "./Home";
 
@@ -25,6 +26,10 @@ function Header() {
                             <Nav className="mr-auto">
                                 <Nav.Link href="/faqs">FAQs</Nav.Link>
                             </Nav>
+                            <Nav className="mr-auto">
+                                <Nav.Link href="/login">Login</Nav.Link>
+                            </Nav>
+
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
@@ -45,6 +50,7 @@ function Header() {
             <div className="content">
             <Route exact path="/" component={Home}/>
             <Route path="/teachers" component={Teachers}/>
+            <Route path="/login" component={Login}/>
             <Route path="/faqs" component={FAQs}/>
           </div>
         </>
