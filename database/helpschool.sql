@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 12.1
--- Dumped by pg_dump version 12.1
+-- Dumped from database version 13.2
+-- Dumped by pg_dump version 13.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -177,6 +177,27 @@ ALTER TABLE helpschool.teacher_requests ALTER COLUMN id ADD GENERATED ALWAYS AS 
 
 
 --
+-- Name: users_donations; Type: TABLE; Schema: helpschool; Owner: postgres
+--
+
+CREATE TABLE helpschool.users_donations (
+    user_email character varying(256) NOT NULL,
+    user_id character varying(128),
+    user_name character varying(256),
+    school_id uuid NOT NULL,
+    supply_id uuid NOT NULL,
+    quantity integer,
+    status character varying(128) DEFAULT 'Ordered'::character varying NOT NULL,
+    tracking_url character varying(1024),
+    created_date timestamp with time zone DEFAULT now() NOT NULL,
+    modified_date timestamp with time zone DEFAULT now(),
+    extra_info jsonb
+);
+
+
+ALTER TABLE helpschool.users_donations OWNER TO postgres;
+
+--
 -- Name: countries countries_pkey; Type: CONSTRAINT; Schema: helpschool; Owner: postgres
 --
 
@@ -257,6 +278,14 @@ ALTER TABLE ONLY helpschool.supplies
 
 
 --
+-- Name: users_donations users_donations_pkey; Type: CONSTRAINT; Schema: helpschool; Owner: postgres
+--
+
+ALTER TABLE ONLY helpschool.users_donations
+    ADD CONSTRAINT users_donations_pkey PRIMARY KEY (user_email);
+
+
+--
 -- Name: fki_countries_province; Type: INDEX; Schema: helpschool; Owner: postgres
 --
 
@@ -296,10 +325,26 @@ ALTER TABLE ONLY helpschool.school_supplies
 
 
 --
+-- Name: users_donations schools_school_id; Type: FK CONSTRAINT; Schema: helpschool; Owner: postgres
+--
+
+ALTER TABLE ONLY helpschool.users_donations
+    ADD CONSTRAINT schools_school_id FOREIGN KEY (school_id) REFERENCES helpschool.schools(school_id) ON UPDATE SET NULL ON DELETE SET NULL NOT VALID;
+
+
+--
 -- Name: school_supplies supplies_supply_id; Type: FK CONSTRAINT; Schema: helpschool; Owner: postgres
 --
 
 ALTER TABLE ONLY helpschool.school_supplies
+    ADD CONSTRAINT supplies_supply_id FOREIGN KEY (supply_id) REFERENCES helpschool.supplies(supply_id) ON UPDATE SET NULL ON DELETE SET NULL NOT VALID;
+
+
+--
+-- Name: users_donations supplies_supply_id; Type: FK CONSTRAINT; Schema: helpschool; Owner: postgres
+--
+
+ALTER TABLE ONLY helpschool.users_donations
     ADD CONSTRAINT supplies_supply_id FOREIGN KEY (supply_id) REFERENCES helpschool.supplies(supply_id) ON UPDATE SET NULL ON DELETE SET NULL NOT VALID;
 
 
