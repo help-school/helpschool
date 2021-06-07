@@ -55,13 +55,12 @@ func (a *SchoolSuppliesServiceInternal) CreateSchoolSupplies(w http.ResponseWrit
 				VALUES ( $1, $2, $3, $4, $5) on conflict (school_id,supply_id) do update 
 					set quantity=excluded.quantity, fulfilled_count=excluded.fulfilled_count`,
 		schoolId, supplyId, data.Quantity, data.FulfilledCount, data.ExtraInfo); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
 }
 func (a *SchoolSuppliesServiceInternal) GetSchoolSupplies(w http.ResponseWriter, r *http.Request) {
 

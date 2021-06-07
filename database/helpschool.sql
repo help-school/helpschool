@@ -333,6 +333,14 @@ ALTER TABLE ONLY helpschool.users_donations
 
 
 --
+-- Name: districts state_state_id; Type: FK CONSTRAINT; Schema: helpschool; Owner: postgres
+--
+
+ALTER TABLE ONLY helpschool.districts
+    ADD CONSTRAINT state_state_id FOREIGN KEY (state_id) REFERENCES helpschool.states(state_id) NOT VALID;
+
+
+--
 -- Name: school_supplies supplies_supply_id; Type: FK CONSTRAINT; Schema: helpschool; Owner: postgres
 --
 
