@@ -37,13 +37,12 @@ func (a *CountriesServiceInternal) CreateCountries(w http.ResponseWriter, r *htt
 
 	if _, err := a.db.Exec(context.Background(), `INSERT INTO helpschool.countries( country_id,name)
 					VALUES ( $1, $2)`, uuid.New(), data.Name); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
 }
 func (a *CountriesServiceInternal) GetCountries(w http.ResponseWriter, r *http.Request) {
 

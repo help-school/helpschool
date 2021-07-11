@@ -173,6 +173,9 @@ func setUpDatabaseConnection() {
 	} else {
 		var err error
 		dbconn := os.Getenv("DB_CONN")
+		if dbconn == "" {
+			dbconn = "postgresql://postgres:Pass1234@localhost/helpschool"
+		}
 		fmt.Fprintf(os.Stderr, `Setting up non-prod DB connection using env $DB_CONN = "%s"`, dbconn)
 
 		dsn, err = url.Parse(dbconn)

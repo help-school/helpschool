@@ -45,13 +45,12 @@ func (a *SchoolsServiceInternal) CreateSchools(w http.ResponseWriter, r *http.Re
 		`INSERT INTO helpschool.schools( school_id,name,place,address,district_id,govt_id,extra_info)
 					VALUES ( $1, $2, $3, $4, $5,$6,$7)`, uuid.New(), data.Name,data.Place,data.Address,
 		districtId,data.GovtId,data.ExtraInfo); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
 }
 func (a *SchoolsServiceInternal) GetSchools(w http.ResponseWriter, r *http.Request) {
 

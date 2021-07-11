@@ -56,14 +56,13 @@ func (a *TeachersRequestServiceInternal) CreateTeachersRequest(w http.ResponseWr
 		`INSERT INTO helpschool.teacher_requests( teacher_name,teacher_phone,teacher_email,url,quantity_needed,address,place,district,state,country,zipcode,extra_info,photo_link)
 					VALUES ( $1, $2, $3, $4, $5,$6,$7,$8,$9,$10,$11,$12,$13)`, data.TeacherName,data.TeacherPhone,data.TeacherEmail,data.Url,data.QuantityNeeded,data.Address,data.Place,
 					        data.District,data.State,data.Country,data.ZipCode,data.ExtraInfo,data.PhotoLink); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		render.DefaultResponder(w, r, render.M{"status": "error: not created"})
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
+
 }
 func (a *TeachersRequestServiceInternal) GetTeachersRequest(w http.ResponseWriter, r *http.Request) {
 

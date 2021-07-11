@@ -45,13 +45,13 @@ func (a *SuppliesServiceInternal) CreateSupplies(w http.ResponseWriter, r *http.
 		`INSERT INTO helpschool.supplies( supply_id,title,country_id,url,description,extra_info)
 					VALUES ( $1, $2, $3, $4, $5,$6)`, uuid.New(), data.Title, id,
 		data.Url, data.Description, data.ExtraInfo); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
+
 }
 func (a *SuppliesServiceInternal) GetSupplies(w http.ResponseWriter, r *http.Request) {
 

@@ -45,13 +45,13 @@ func (a *StatesServiceInternal) CreateStates(w http.ResponseWriter, r *http.Requ
 		`INSERT INTO helpschool.states( state_id,name,country_id,govt_id,extra_info)
 					VALUES ( $1, $2, $3, $4, $5)`, uuid.New(), data.Name,
 		id, data.GovtId, data.ExtraInfo); err == nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
-	render.DefaultResponder(w, r, render.M{"status": "created"})
-	//render.Status(r, http.StatusCreated)
-	//render.Render(w, r, )
+
 }
 func (a *StatesServiceInternal) GetStates(w http.ResponseWriter, r *http.Request) {
 
