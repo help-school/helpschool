@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -33,7 +34,8 @@ var db *pgxpool.Pool
 var bProd = false
 
 //go:embed web
-var webFS embed.FS
+var webFSRoot embed.FS
+var webFS = fsMustSub(webFSRoot, "web")
 
 func main() {
 
@@ -132,7 +134,7 @@ func main() {
 	r.Mount("/admin", adminRouter())
 
 	// r.Mount("/web/", http.StripPrefix("/", http.FileServer(http.FS(webFS))))
-	r.Mount("/web", http.FileServer(http.FS(webFS)))
+	r.Mount("/", http.FileServer(http.FS(webFS)))
 
 	// Passing -routes to the program will generate docs for the above
 	// router definition. See the `routes.json` file in this folder for
@@ -146,6 +148,7 @@ func main() {
 		return
 	}
 	defer db.Close() // remove when sql is ready
+	fmt.Println("starting the server on :8080")
 	fmt.Printf("Server stopped, error: %s\n", http.ListenAndServe(":8080", r))
 }
 
@@ -267,4 +270,12 @@ func init() {
 
 		render.DefaultResponder(w, r, v)
 	}
+}
+
+func fsMustSub(root fs.FS, path string) fs.FS {
+	sub, err := fs.Sub(webFSRoot, path)
+	if err != nil {
+		panic(err)
+	}
+	return sub
 }
