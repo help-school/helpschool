@@ -8,6 +8,7 @@ import (
 	"context"
 	"embed"
 	_ "embed"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -21,26 +22,29 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/docgen"
 	"github.com/go-chi/render"
+	"github.com/gorilla/sessions"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/log/log15adapter"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/venkata6/helpschool/api/auth"
 	"github.com/venkata6/helpschool/api/service"
 
 	// "time"
 )
 
-var routes = flag.Bool("routes", false, "Generate router documentation")
-var db *pgxpool.Pool
-var bProd = false
-
 //go:embed web
 var webFSRoot embed.FS
 var webFS = fsMustSub(webFSRoot, "web")
 
-func main() {
+var Store *sessions.FilesystemStore
 
+func main() {
+	var generateDocs, isProd bool
+	flag.BoolVar(&generateDocs, "routes", false, "Generate router documentation")
+	flag.BoolVar(&isProd, "prod", false, "Run in production mode")
 	flag.Parse()
 
+	ctx := context.Background()
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -49,6 +53,10 @@ func main() {
 	r.Use(middleware.URLFormat)
 	r.Use(middleware.NoCache)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
+
+	authMiddleware := auth.NewMiddleware(
+		"https://helpschool/api",
+		"https://helpschool.us.auth0.com/")
 
 	// add CORS middleware
 	cors := cors.New(cors.Options{
@@ -60,8 +68,14 @@ func main() {
 	})
 	r.Use(cors.Handler)
 
+	Store = sessions.NewFilesystemStore("", []byte("something-very-secret"))
+	gob.Register(map[string]interface{}{})
+
 	// connect to the database and setup the connection pool for services to use
-	setUpDatabaseConnection()
+	db, err := setUpDatabaseConnection(ctx, isProd)
+	if err != nil {
+		panic(err)
+	}
 
 	// RESTy routes for "countries" resource
 	countryService := service.NewCountriesService(db)
@@ -133,13 +147,18 @@ func main() {
 	// r.Route("/admin", func(r chi.Router) { admin routes here })
 	r.Mount("/admin", adminRouter())
 
-	// r.Mount("/web/", http.StripPrefix("/", http.FileServer(http.FS(webFS))))
+	// requires a valid JWT token
+	r.With(authMiddleware.Handler).Get("/secret", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		render.JSON(w, r, map[string]int{"secret": 42})
+	}))
+
+	// Public HTML site
 	r.Mount("/", http.FileServer(http.FS(webFS)))
 
 	// Passing -routes to the program will generate docs for the above
 	// router definition. See the `routes.json` file in this folder for
 	// the output.
-	if *routes {
+	if generateDocs {
 		fmt.Printf(docgen.JSONRoutesDoc(r))
 		fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
 			ProjectPath: "github.com/go-chi/chi",
@@ -153,60 +172,50 @@ func main() {
 }
 
 
-func setUpDatabaseConnection() {
-
-	var dbPwd = ""
-	var dsn *url.URL
-	var instanceConnectionName = ""
+func setUpDatabaseConnection(ctx context.Context, isProd bool) (*pgxpool.Pool, error) {
 	// database connection pool setup
-	if bProd {
-		dbPwd = "Nellai987!!!"
-		instanceConnectionName = "/cloudsql/helpschool:us-central1:helpschool-db"
-		dsn = &url.URL{
-			User:     url.UserPassword("postgres", dbPwd),
-			Scheme:   "postgres",
-			Host:     instanceConnectionName,
-			Path:     "helpschool-db",
-			RawQuery: (&url.Values{"sslmode": []string{"disable"}}).Encode(),
-		}
+	dbPwd := "Nellai987!!!"
+	instanceConnectionName := "/cloudsql/helpschool:us-central1:helpschool-db"
+	dsn := &url.URL{
+		User:     url.UserPassword("postgres", dbPwd),
+		Scheme:   "postgres",
+		Host:     instanceConnectionName,
+		Path:     "helpschool-db",
+		RawQuery: (&url.Values{"sslmode": []string{"disable"}}).Encode(),
+	}
 
-		// "postgres://username:password@/databasename?host=/cloudsql/example:us-central1:example123"
-		// "postgres://postgres:Nellai987!!!@/helpschool-db?host=/cloudsql/helpschool:us-central1:helpschool-db"
-
-	} else {
-		var err error
+	if !isProd {
 		dbconn := os.Getenv("DB_CONN")
 		if dbconn == "" {
+			fmt.Println("no $DB_CONN provided, proceeding with default")
 			dbconn = "postgresql://postgres:Pass1234@localhost/helpschool"
 		}
-		fmt.Fprintf(os.Stderr, `Setting up non-prod DB connection using env $DB_CONN = "%s"`, dbconn)
 
+		var err error
 		dsn, err = url.Parse(dbconn)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "failed to parse env $DB_CONN, example postgres://user:password@localhost:5432/helpschool?sslmode=disable")
-			os.Exit(2)
+			return nil, fmt.Errorf("failed to parse env $DB_CONN, example postgres://user:password@localhost:5432/helpschool?sslmode=disable")
 		}
+		fmt.Fprintf(os.Stderr, `Setting up non-prod DB connection using env $DB_CONN = "%s"`, dbconn)
 	}
-	var connectionString = ""
-	if bProd == true {
-		connectionString = "postgres://postgres:Nellai987!!!@/helpschool?host=/cloudsql/helpschool:us-central1:helpschool-db"
-	} else {
+
+	connectionString := "postgres://postgres:Nellai987!!!@/helpschool?host=/cloudsql/helpschool:us-central1:helpschool-db"
+	if !isProd {
 		connectionString = dsn.String()
 	}
+
 	var poolConfig, err = pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		fmt.Printf("Unable to parse DATABASE_URL %v \n", err)
 		os.Exit(1)
 	}
-	db, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
+	db, err := pgxpool.ConnectConfig(ctx, poolConfig)
 	if err != nil {
-		fmt.Printf("Unable to create connection pool  %v \n ", err)
-		os.Exit(1)
-	} else {
-		fmt.Printf("Database connection successful!!!   \n ")
+		return nil, fmt.Errorf("db connect: %s", err)
 	}
 
-	// database connection pool setup
+	fmt.Println("Database connection successful!!!")
+	return db, nil
 }
 
 // A completely separate router for administrator routes
