@@ -1,4 +1,15 @@
 
+## .env
+create `.env`, below is the non-secret part of it
+```
+BROWSER=none
+REACT_APP_AUTH0_DOMAIN=helpschool.us.auth0.com
+REACT_APP_AUTH0_CLIENT_ID=pf6H9BNexezeHm2Yj7VECSRU4ETzC68w
+REACT_APP_API_URL=http://localhost:8080
+REACT_APP_API_AUDIENCE=https://helpschool/api
+REACT_APP_API_SCOPE=read:current_user
+```
+
 ## Available Scripts
 
 In the project directory, you can run:
