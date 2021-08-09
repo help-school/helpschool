@@ -1,38 +1,32 @@
-import React, {useRef,  useState} from 'react';
-import {Col, Container, Form, Button} from "react-bootstrap";
-import Alert from 'react-bootstrap/Alert'
-import {useDispatch,useSelector} from 'react-redux';
-import * as Actions from '../store/actions';
-
-import Introduce from "./Introduce";
+import React from 'react';
+import {Nav} from "react-bootstrap";
+import {useAuth0} from "@auth0/auth0-react";
 
 function Login() {
+    const {
+        loginWithRedirect, 
+        isAuthenticated, 
+        isLoading, 
+        logout: logoutWithRedirect
+    } = useAuth0();
 
-  const dispatch = useDispatch();
+    function login(key, e) {
+        e.preventDefault()
+        loginWithRedirect()
+    }
+    
+    function logout(key, e) {
+        e.preventDefault()
+        logoutWithRedirect({})
+    }
 
-  const [status, setStatus] = useState("");
-
-  
-  
-  function handleSubmit(event){
-     
-      event.preventDefault();
-      //console.log(item)  
-      // dispatch(Actions.postTeacherRequest(item));
-      // setStatus("success")
-      // setStatus("failure")
-
-      console.log("Submit clicked: ", event.target)
-  }
-   
-  return (
-          <section className={"ftco-section"}>
-            <Container>
-              <Alert.Heading>Not logged in yet ! </Alert.Heading>
-            </Container>
-        </section>
-    );
-   
-  }
+    if (isLoading) return <Nav.Link>Logging in...</Nav.Link>
+    
+    if (isAuthenticated) {
+        return <Nav.Link href="/logout" onSelect={logout}>Log out</Nav.Link>
+    }
+    
+    return <Nav.Link href="/login" onSelect={login}>Login</Nav.Link>
+}
 
 export default Login;

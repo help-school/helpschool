@@ -27,6 +27,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "rm -rf ../api/web && mv build ../api/web",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
