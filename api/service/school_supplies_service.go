@@ -16,29 +16,35 @@ import (
 	"time"
 )
 
-type SchoolSuppliesService interface {
-	CreateSchoolSupplies(w http.ResponseWriter, r *http.Request)
-	GetSchoolSupplies(w http.ResponseWriter, r *http.Request)
-	GetFeaturedSchoolSupplies(w http.ResponseWriter, r *http.Request)
-	DeleteSchoolSupplies(w http.ResponseWriter, r *http.Request)
+type UserDonationsService interface {
+	CreateUserDonations(w http.ResponseWriter, r *http.Request)
+	GetUserDonations(w http.ResponseWriter, r *http.Request)
+	UpdateUserDonations(w http.ResponseWriter, r *http.Request)
+	DeleteUserDonations(w http.ResponseWriter, r *http.Request)
 }
 
-type SchoolSuppliesServiceInternal struct {
+type UserDonationsServiceInternal struct {
 	db *pgxpool.Pool
 }
 
-func NewSchoolSuppliesService(db *pgxpool.Pool) SchoolSuppliesService {
-	return &SchoolSuppliesServiceInternal{db: db}
+func NewUserDonationsService(db *pgxpool.Pool) UserDonationsService {
+	return &UserDonationsServiceInternal{db: db}
 }
 
 // CreateCountries persists the posted Article and returns it
 // back to the client as an acknowledgement.
-func (a *SchoolSuppliesServiceInternal) CreateSchoolSupplies(w http.ResponseWriter, r *http.Request) {
-	data := &request.SchoolSuppliesRequest{}
+func (a *UserDonationsServiceInternal) CreateUserDonations(w http.ResponseWriter, r *http.Request) {
+	data := &request.UserDonationsRequest{}
 	if err := render.Bind(r, data); err != nil {
 		render.Render(w, r, util.ErrInvalidRequest(err))
 		return
 	}
+
+	if len(data.UserEmail) == 0 {
+		render.Render(w, r, util.ErrInvalidRequest(errors.New("empty UserEmail")))
+		return
+	}
+
 	if len(data.SchoolId) == 0 {
 		render.Render(w, r, util.ErrInvalidRequest(errors.New("empty SchoolId")))
 		return
@@ -51,10 +57,9 @@ func (a *SchoolSuppliesServiceInternal) CreateSchoolSupplies(w http.ResponseWrit
 	supplyId, _ := uuid.Parse(data.SupplyId)
 
 	if _, err := a.db.Exec(context.Background(),
-		`INSERT INTO helpschool.school_supplies( school_id,supply_id,quantity,fulfilled_count,extra_info)
-				VALUES ( $1, $2, $3, $4, $5) on conflict (school_id,supply_id) do update 
-					set quantity=excluded.quantity, fulfilled_count=excluded.fulfilled_count`,
-		schoolId, supplyId, data.Quantity, data.FulfilledCount, data.ExtraInfo); err == nil {
+		`INSERT INTO helpschool.users_donations( user_email,user_id,user_name,school_id,supply_id,quantity,status,tracking_url,extra_info)
+				VALUES ( $1, $2, $3, $4, $5, $6,$7,$8,$9)`,data.UserEmail,data.UserId,data.UserName, schoolId, supplyId,
+				data.Quantity, data.Status, data.TrackingUrl, data.ExtraInfo); err == nil {
 		w.WriteHeader(http.StatusCreated)
 		render.DefaultResponder(w, r, render.M{"status": "created"})
 	} else {
@@ -62,7 +67,7 @@ func (a *SchoolSuppliesServiceInternal) CreateSchoolSupplies(w http.ResponseWrit
 		render.DefaultResponder(w, r, render.M{"status": "not created"})
 	}
 }
-func (a *SchoolSuppliesServiceInternal) GetSchoolSupplies(w http.ResponseWriter, r *http.Request) {
+func (a *UserDonationsServiceInternal) GetUserDonations(w http.ResponseWriter, r *http.Request) {
 
 	schoolId := chi.URLParam(r, "schoolId")
 	var count int
@@ -118,7 +123,7 @@ func (a *SchoolSuppliesServiceInternal) GetSchoolSupplies(w http.ResponseWriter,
 	}
 }
 
-func (a *SchoolSuppliesServiceInternal) GetFeaturedSchoolSupplies(w http.ResponseWriter, r *http.Request) {
+func (a *UserDonationsServiceInternal) UpdateUserDonations(w http.ResponseWriter, r *http.Request) {
 
 	// let us return 3 newest entries as featured for now
 
@@ -169,11 +174,11 @@ func (a *SchoolSuppliesServiceInternal) GetFeaturedSchoolSupplies(w http.Respons
 	}
 }
 
-func (a *SchoolSuppliesServiceInternal) DeleteSchoolSupplies(w http.ResponseWriter, r *http.Request) {
+func (a *UserDonationsServiceInternal) DeleteUserDonations(w http.ResponseWriter, r *http.Request) {
 	//render.RenderList(w, r, NewCountriesListResponse(articles))
 }
 
-func NewSchoolSuppliesListResponse(schoolSupplies []response.SchoolSuppliesResponse) []render.Renderer {
+func NewUserDonationsListResponse(schoolSupplies []response.SchoolSuppliesResponse) []render.Renderer {
 	list := []render.Renderer{}
 	for _, schoolSupply := range schoolSupplies {
 		list = append(list, schoolSupply)

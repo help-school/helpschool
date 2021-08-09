@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-type SchoolSuppliesResponse struct {
-	*dto.SchoolSupplies
+type UserDonationsResponse struct {
+	*dto.UserDonations
 }
 
-func (rd SchoolSuppliesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (rd UserDonationsResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	// Pre-processing before a response is marshalled and sent across the wire
 	return nil
 }
