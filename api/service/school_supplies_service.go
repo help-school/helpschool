@@ -67,7 +67,7 @@ func (a *SchoolSuppliesServiceInternal) GetSchoolSupplies(w http.ResponseWriter,
 	schoolId := chi.URLParam(r, "schoolId")
 	var count int
 	rowCount, err := a.db.Query(context.Background(), "select count(*) as count from" +
-					"  helpschool.school_supplies where school_id = $1 ",schoolId)
+		"  helpschool.school_supplies where school_id = $1 ",schoolId)
 	for rowCount.Next() {
 		_ = rowCount.Scan(&count)
 		//checkErr(err)
