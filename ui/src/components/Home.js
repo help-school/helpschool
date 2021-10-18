@@ -6,6 +6,7 @@ import Footer from "./Footer";
 //import FeaturedProducts from "./components/Featured";
 import School from "./School";
 import Introduce from "./Introduce";
+import MyDonations from "./MyDonations";
 
 function Home() {
 
@@ -14,7 +15,8 @@ function Home() {
             {/* <Header/> */}
             <Introduce/>
             <School/>
-            {/* <FeaturedProducts/> */} 
+            {/* <FeaturedProducts/> */}
+            <MyDonations/>
         </div>
     );
 }
