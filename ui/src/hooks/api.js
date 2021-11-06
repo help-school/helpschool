@@ -10,7 +10,7 @@ console.log('baseURL', baseURL, 'audience', defaultAudience)
 
 // see https://github.com/auth0/auth0-react/blob/master/EXAMPLES.md
 
-const useApi = (path, options = {}) => {
+const useProtectedApi = (path, options = {}) => {
   const { getAccessTokenSilently } = useAuth0();
   const [state, setState] = useState({
     error: null,
@@ -36,7 +36,7 @@ const useApi = (path, options = {}) => {
         });
         setState({
           ...state,
-          data: await res.json(),
+          donations: await res.json(),
           error: null,
           loading: false,
         });
@@ -56,4 +56,4 @@ const useApi = (path, options = {}) => {
   };
 };
 
-export default useApi
+export default useProtectedApi

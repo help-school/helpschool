@@ -17,6 +17,7 @@ import (
 	"os"
 	"time"
 
+	jwt "github.com/form3tech-oss/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
@@ -28,7 +29,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/venkata6/helpschool/api/auth"
 	"github.com/venkata6/helpschool/api/service"
-
 	// "time"
 )
 
@@ -37,6 +37,12 @@ var webFSRoot embed.FS
 var webFS = fsMustSub(webFSRoot, "web")
 
 var Store *sessions.FilesystemStore
+
+// User is a user meta retrieved from JWT (Auth0 access token)
+type User struct {
+	Email string
+	Auth0ID string
+}
 
 func main() {
 	var generateDocs, isProd bool
@@ -143,14 +149,28 @@ func main() {
 		r.Post("/", teachersRequestService.CreateTeachersRequest) // POST /teachers/requests
 	})
 
+	// requires a valid JWT token
+	r.With(authMiddleware.Handler).Get("/api/my-donations", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type Donation struct {
+			Item      string `json:"item"`
+			Timestamp int64  `json:"ts"`
+		}
+
+		user := getUserOrFail(w, r, http.StatusBadRequest)
+		if user == nil {
+			return
+		}
+
+		fmt.Printf("user: %#v\n", user)
+		render.JSON(w, r, []Donation{
+			{"something useful", time.Now().Unix()},
+			{"something even more useful", time.Now().Unix()},
+		})
+	}))
+
 	// Mount the admin sub-router, which btw is the same as:
 	// r.Route("/admin", func(r chi.Router) { admin routes here })
 	r.Mount("/admin", adminRouter())
-
-	// requires a valid JWT token
-	r.With(authMiddleware.Handler).Get("/secret", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		render.JSON(w, r, map[string]int{"secret": 42})
-	}))
 
 	// Public HTML site
 	r.Mount("/", http.FileServer(http.FS(webFS)))
@@ -170,7 +190,6 @@ func main() {
 	fmt.Println("starting the server on :8080")
 	fmt.Printf("Server stopped, error: %s\n", http.ListenAndServe(":8080", r))
 }
-
 
 func setUpDatabaseConnection(ctx context.Context, isProd bool) (*pgxpool.Pool, error) {
 	// database connection pool setup
@@ -287,4 +306,23 @@ func fsMustSub(root fs.FS, path string) fs.FS {
 		panic(err)
 	}
 	return sub
+}
+
+func getUserOrFail(w http.ResponseWriter, r *http.Request, failStatus int) *User {
+	if value := r.Context().Value("user"); value != nil {
+		if token, ok := value.(*jwt.Token); ok {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				var user User
+				if email, ok := claims["sub"]; ok {
+					user.Auth0ID = email.(string)
+				}
+				if email, ok := claims["https://example.com/email"]; ok {
+					user.Email = email.(string)
+				}
+				return &user
+			}
+		}
+	}
+	http.Error(w, "no JWT token", failStatus)
+	return nil
 }
